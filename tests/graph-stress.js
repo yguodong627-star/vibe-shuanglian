@@ -1,0 +1,15 @@
+const {chromium}=require('/workspace/tools/node_modules/playwright-core');const fs=require('fs'),http=require('http'),path=require('path');
+const ROOT=path.join(__dirname,'..');
+const srv=http.createServer((q,r)=>{let p=q.url.split('?')[0];if(p==='/')p='/index.html';const f=path.join(ROOT,p);if(!fs.existsSync(f)){r.statusCode=404;return r.end();}r.setHeader('content-type',{'.js':'text/javascript','.html':'text/html','.css':'text/css','.ttf':'font/ttf'}[path.extname(f)]||'application/octet-stream');r.end(fs.readFileSync(f));}).listen(0);
+(async()=>{const b=await chromium.launch({executablePath:'/usr/bin/google-chrome',args:['--no-sandbox','--disable-gpu']});const pg=await b.newPage({viewport:{width:1440,height:900}});
+await new Promise(r=>srv.listening?r():srv.once('listening',r));await pg.goto('http://localhost:'+srv.address().port+'/');await pg.waitForFunction(()=>window.LJ);
+const N=+process.argv[2]||300;
+const t0=Date.now();
+await pg.evaluate(async N=>{const tags=['读书','项目','想法','工作','生活','技术'];for(let i=0;i<N;i++){const links=[];for(let k=0;k<1+Math.floor(Math.random()*3);k++)links.push('[[主题'+Math.floor(Math.random()*N)+']]');
+ await LJ.createNote('主题'+i,'#'+tags[i%6]+' 内容 '+links.join(' '),false);}},N);
+console.log('创建',N,'篇 ms',Date.now()-t0);
+await pg.evaluate(()=>LJ.setView('graph'));await pg.waitForTimeout(4000);
+const fps=await pg.evaluate(()=>new Promise(r=>{let n=0;const t=performance.now();const G=LJ.G();G.alpha=1;G.kick();function f(){n++;if(performance.now()-t>1000)r(n);else requestAnimationFrame(f);}f();}));
+console.log('图谱重排期间 fps≈',fps,'节点',await pg.evaluate(()=>LJ.G().nodes.length));
+await pg.waitForTimeout(4000);await pg.screenshot({path:path.join(__dirname,'..','screenshots/desktop-graph-large.png')});
+await b.close();srv.close();})();

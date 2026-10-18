@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071a22">
+<title>链记 · 本地双链笔记与复习</title>
+<meta name="description" content="每日笔记、[[双链]]、反向链接、标签与图谱、间隔复习。纯前端，数据只在你的浏览器，支持 Markdown ZIP 与 JSON 备份。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='16' fill='%23071a22'/%3E%3Ccircle cx='11' cy='16' r='4' fill='none' stroke='%23f0efe9' stroke-width='2'/%3E%3Ccircle cx='21' cy='16' r='4' fill='none' stroke='%2339718b' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-pane="list" data-view="notes">
+<div class="app">
+  <aside class="side" id="side">
+    <div class="side-top">
+      <div class="brand"><span class="mark"><svg viewBox="0 0 32 32"><circle cx="11" cy="16" r="5"/><circle cx="21" cy="16" r="5"/></svg></span><div><b>链记</b><i>LIANJI · 双链笔记</i></div></div>
+      <div class="side-act"><button class="pill primary" id="btnDaily">今日笔记</button><button class="pill glass" id="btnNew">新建</button></div>
+      <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input id="q" type="search" placeholder="搜索标题、正文、#标签（Ctrl+K）" autocomplete="off"></div>
+      <div class="chips" id="kinds"><button data-k="all" class="on">全部</button><button data-k="daily">日记</button><button data-k="note">笔记</button><button data-k="orphan">孤岛</button></div>
+      <div class="tagbar" id="tagbar"></div>
+    </div>
+    <div class="list" id="list"></div>
+    <nav class="snav" id="snav">
+      <button data-view="notes" class="on">笔记</button><button data-view="graph">图谱</button><button data-view="review">复习<em id="dueN" hidden>0</em></button><button data-view="backup">备份</button>
+    </nav>
+  </aside>
+
+  <main class="main" id="main">
+    <!-- 笔记 -->
+    <section class="v" id="v-notes">
+      <div class="empty-note" id="emptyNote"><div><h2>开始记录</h2><p>点“今日笔记”写今天的日记，或“新建”一篇。在正文里输入 <code>[[</code> 就能链接到另一篇笔记。</p></div></div>
+      <div class="editor" id="editor" hidden>
+        <div class="ed-top">
+          <button class="back" id="btnBack" aria-label="返回列表">‹ 列表</button>
+          <input class="ttl" id="ttl" placeholder="标题" autocomplete="off">
+          <div class="seg" id="modeSeg"><button data-m="edit">编辑</button><button data-m="split" class="on">分栏</button><button data-m="view">预览</button><button data-m="links" class="only-m">链接</button></div>
+        </div>
+        <div class="tb" id="tb">
+          <button data-ins="**|**" title="粗体"><b>B</b></button><button data-ins="*|*" title="斜体"><i>I</i></button><button data-ins="==|==" title="挖空/高亮（复习时遮盖）">挖空</button><button data-ins="[[|]]" title="双链">[[ ]]</button><button data-ins="#" title="标签">#</button>
+          <button data-line="## " title="二级标题">H2</button><button data-line="- [ ] " title="待办">☐</button><button data-line="> " title="引用">❝</button><button data-ins="`|`" title="代码">{ }</button>
+          <span class="sp"></span><span class="meta" id="meta"></span><span class="saved" id="saved">已保存</span>
+        </div>
+        <div class="panes" id="panes">
+          <div class="pane-e"><textarea id="body" spellcheck="false" placeholder="用 Markdown 写作。[[笔记名]] 建立双链，#标签 归类，==关键词== 在复习里变成填空。"></textarea><div class="ac" id="ac" hidden></div></div>
+          <article class="pane-p md" id="prev"></article>
+        </div>
+      </div>
+    </section>
+    <!-- 图谱 -->
+    <section class="v" id="v-graph">
+      <div class="gwrap"><canvas id="cv"></canvas>
+        <div class="gctl">
+          <div class="seg dark" id="gMode"><button data-g="link" class="on">链接图谱</button><button data-g="tag">标签图谱</button></div>
+          <label class="gchk"><input type="checkbox" id="gLocal"> 只看当前笔记附近</label>
+          <label class="gchk"><input type="checkbox" id="gGhost" checked> 显示未创建的链接</label>
+          <button class="pill sm glass" id="gReset">重置视图</button>
+        </div>
+        <div class="gleg" id="gLeg"></div>
+        <div class="gtip" id="gTip" hidden></div>
+      </div>
+    </section>
+    <!-- 复习 -->
+    <section class="v" id="v-review">
+      <div class="rv-hero"><div class="eyebrow">间隔复习 · 规则公开</div><h1><span id="rvNum">0</span><small> 篇今天到期</small></h1><p id="rvSub"></p></div>
+      <div class="rv-body">
+        <div class="rv-card" id="rvCard"></div>
+        <div class="rv-side">
+          <h3>规则（SM-2 简化版）</h3>
+          <div class="rules" id="rules"></div>
+          <h3>复习清单</h3><div id="rvList" class="rvlist"></div>
+        </div>
+      </div>
+    </section>
+    <!-- 备份 -->
+    <section class="v" id="v-backup">
+      <div class="bk-hero"><div class="eyebrow">数据只在本机</div><h1>导出、备份与导入</h1><p>浏览器清理站点数据、隐私模式、更换设备都会让笔记丢失，请定期导出。</p></div>
+      <div class="bk-body">
+        <div class="cards">
+          <div class="card dark"><h3>Markdown 文件夹（ZIP）</h3><p>每篇笔记一个 .md（含 front matter，[[双链]] 原样保留），日记放“日记/”。可直接用 Obsidian、Logseq 等打开。</p><div class="row-act"><button class="pill primary" id="exZip">导出 ZIP</button></div></div>
+          <div class="card"><h3>JSON 完整备份</h3><p>包含笔记、创建/修改时间与复习进度，用于原样恢复。</p><div class="row-act"><button class="pill ink" id="exJson">导出 JSON</button></div></div>
+          <div class="card"><h3>导入</h3><p>支持：本应用的 JSON 备份、单个或多个 .md/.txt、含 .md 的 ZIP。标题重名且内容不同的会改名为“标题 (导入)”，不会覆盖你现有的笔记。</p><div class="row-act"><button class="pill ink" id="imp">选择文件导入</button></div><input type="file" id="impFile" multiple accept=".json,.md,.markdown,.txt,.zip" hidden></div>
+          <div class="card"><h3>存储</h3><p id="storeInfo">—</p><div class="row-act"><button class="pill ink" id="persist">申请持久存储</button><button class="pill danger" id="wipe">清空全部…</button></div></div>
+        </div>
+        <h2 class="h2">说明与已知限制</h2>
+        <div class="limits" id="limits"></div>
+      </div>
+    </section>
+  </main>
+
+  <aside class="rail" id="rail">
+    <div class="rail-in" id="railIn"></div>
+  </aside>
+</div>
+<nav class="tabbar" id="tabbar"><button data-view="notes" class="on">笔记</button><button data-view="graph">图谱</button><button data-view="review">复习<em id="dueN2" hidden>0</em></button><button data-view="backup">备份</button></nav>
+<div class="toast" id="toast" hidden></div>
+<script src="zip.js"></script>
+<script src="md.js"></script>
+<script src="sched.js"></script>
+<script src="graph.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
